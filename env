@@ -1,0 +1,14 @@
+# ─── Flask ────────────────────────────────────────────────────────────────────
+FLASK_ENV=production
+SECRET_KEY=cambia_este_valor_secreto_aqui
+
+# ─── Base de datos ────────────────────────────────────────────────────────────
+DB_USER=ecommerce_user
+DB_PASSWORD=EcommercePass@2024!
+DB_NAME=ecommerce_db
+DATABASE_URL=postgresql://ecommerce_user:EcommercePass@2024!@db:5432/ecommerce_db
+
+# ─── Harbor Registry ──────────────────────────────────────────────────────────
+HARBOR_URL=harbor.local
+HARBOR_PROJECT=codexlabs
+IMAGE_TAG=latest

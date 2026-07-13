@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard — Corazón Valiente</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Montserrat', sans-serif; }</style>
+</head>
+<body class="bg-[#f4efe7] min-h-screen">
+
+  <!-- Navbar admin -->
+  <header class="bg-[#111827] text-white px-6 py-4 flex items-center justify-between">
+    <div>
+      <p class="text-xs tracking-widest uppercase text-white/50">Panel admin</p>
+      <h1 class="font-black uppercase text-lg">Corazón Valiente</h1>
+    </div>
+    <div class="flex items-center gap-4">
+      <a href="/" target="_blank"
+        class="text-xs text-white/60 hover:text-white transition">Ver tienda ↗</a>
+      <a href="/admin/logout"
+        class="bg-white/10 hover:bg-white/20 text-white text-xs font-bold px-4 py-2 rounded-full transition">
+        Cerrar sesión
+      </a>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-10">
+
+    <!-- Mensajes flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="space-y-3 mb-6" id="flash-container">
+          {% for category, message in messages %}
+            <div class="flash-message flex items-center gap-3 px-5 py-3 rounded-2xl text-sm font-semibold border transition-all duration-500 transform opacity-100 translate-y-0
+              {% if category == 'error' %}bg-rose-50 text-rose-600 border-rose-100
+              {% elif category == 'warning' %}bg-amber-50 text-amber-700 border-amber-200
+              {% else %}bg-emerald-50 text-emerald-700 border-emerald-100{% endif %}">
+              <span class="flex items-center justify-center w-5 h-5 rounded-full bg-current/10 text-xs font-bold shrink-0">
+                {% if category == 'error' %}✕{% elif category == 'warning' %}⚠️{% else %}✓{% endif %}
+              </span>
+              <span class="flex-1">{{ message }}</span>
+              <button onclick="this.closest('.flash-message').remove()" class="text-current/40 hover:text-current font-bold text-lg leading-none cursor-pointer">✕</button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Tabs de Selección -->
+    <div class="flex border-b border-black/10 mb-8 gap-4 shrink-0">
+      <button onclick="switchTab('productos')" id="tab-btn-productos"
+        class="pb-3 text-sm font-bold uppercase tracking-widest border-b-2 border-[#c61b5a] text-[#111827] transition focus:outline-none cursor-pointer">
+        📦 Productos ({{ products|length }})
+      </button>
+      <button onclick="switchTab('pedidos')" id="tab-btn-pedidos"
+        class="pb-3 text-sm font-bold uppercase tracking-widest border-b-2 border-transparent text-black/40 hover:text-black/60 transition focus:outline-none cursor-pointer">
+        🛍️ Pedidos ({{ orders|length }})
+      </button>
+    </div>
+
+    <!-- SECCIÓN: PRODUCTOS -->
+    <div id="section-productos" class="space-y-6">
+      <!-- Encabezado + botón nuevo -->
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-xl font-black uppercase tracking-wider">Gestión de Catálogo</h2>
+        <a href="/admin/products/new"
+          class="bg-[#c61b5a] text-white px-5 py-2 rounded-full font-bold text-sm hover:bg-[#a81549] transition">
+          + Nuevo producto
+        </a>
+      </div>
+
+      <!-- Tabla de productos -->
+      {% if products %}
+      <div class="bg-white rounded-3xl border border-black/5 shadow-sm overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-[#f4efe7] border-b border-black/5">
+            <tr>
+              <th class="text-left px-6 py-4 font-bold uppercase tracking-widest text-xs">Producto</th>
+              <th class="text-left px-4 py-4 font-bold uppercase tracking-widest text-xs">Precio</th>
+              <th class="text-left px-4 py-4 font-bold uppercase tracking-widest text-xs">Stock</th>
+              <th class="text-left px-4 py-4 font-bold uppercase tracking-widest text-xs">Colores</th>
+              <th class="text-left px-4 py-4 font-bold uppercase tracking-widest text-xs">Estado</th>
+              <th class="px-4 py-4 font-bold uppercase tracking-widest text-xs text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-black/5">
+            {% for p in products %}
+            <tr class="hover:bg-[#faf8f5] transition">
+              <td class="px-6 py-4">
+                <p class="font-bold">{{ p.name }}</p>
+                <p class="text-xs text-black/40 mt-0.5">{{ p.slug }}</p>
+              </td>
+              <td class="px-4 py-4">
+                <p class="font-bold">S/ {{ "%.2f"|format(p.price) }}</p>
+                {% if p.original_price %}
+                  <p class="text-xs text-black/40 line-through">S/ {{ "%.2f"|format(p.original_price) }}</p>
+                {% endif %}
+              </td>
+              <td class="px-4 py-4">
+                <span class="font-semibold {% if p.stock <= 5 %}text-red-500{% endif %}">
+                  {{ p.stock }}
+                </span>
+              </td>
+              <td class="px-4 py-4">
+                <div class="flex gap-1 flex-wrap">
+                  {% for color in p.colors %}
+                    <span class="text-xs bg-black/5 px-2 py-0.5 rounded-full">{{ color }}</span>
+                  {% endfor %}
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                {% if p.is_active %}
+                  <span class="bg-green-50 text-green-700 text-xs font-bold px-3 py-1 rounded-full">Activo</span>
+                {% else %}
+                  <span class="bg-black/5 text-black/40 text-xs font-bold px-3 py-1 rounded-full">Inactivo</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-4 text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <a href="/admin/products/{{ p.id }}/edit"
+                    class="text-xs font-bold bg-black/5 hover:bg-black/10 px-3 py-1.5 rounded-full transition">
+                    Editar
+                  </a>
+                  <form method="POST" action="/admin/products/{{ p.id }}/delete"
+                    onsubmit="return confirm('¿Eliminar este producto?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit"
+                      class="text-xs font-bold text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-full transition cursor-pointer">
+                      Eliminar
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="bg-white rounded-3xl p-12 text-center border border-black/5 shadow-sm">
+        <p class="text-3xl mb-3">📦</p>
+        <p class="font-bold text-lg">Aún no hay productos</p>
+        <p class="text-sm text-black/50 mt-1">Crea tu primer producto para que aparezca en la tienda.</p>
+        <a href="/admin/products/new"
+          class="inline-block mt-6 bg-[#c61b5a] text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-[#a81549] transition">
+          + Crear primer producto
+        </a>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- SECCIÓN: PEDIDOS -->
+    <div id="section-pedidos" class="space-y-6 hidden">
+      <h2 class="text-xl font-black uppercase tracking-wider">Registro de Ventas</h2>
+
+      {% if orders %}
+      <div class="bg-white rounded-3xl border border-black/5 shadow-sm overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-[#f4efe7] border-b border-black/5">
+            <tr>
+              <th class="text-left px-6 py-4 font-bold uppercase tracking-widest text-xs">ID / Fecha</th>
+              <th class="text-left px-4 py-4 font-bold uppercase tracking-widest text-xs">Cliente</th>
+              <th class="text-left px-4 py-4 font-bold uppercase tracking-widest text-xs">Detalles del Pedido</th>
+              <th class="text-left px-4 py-4 font-bold uppercase tracking-widest text-xs">Total</th>
+              <th class="text-left px-4 py-4 font-bold uppercase tracking-widest text-xs">Comprobante</th>
+              <th class="text-left px-4 py-4 font-bold uppercase tracking-widest text-xs">Estado</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-black/5">
+            {% for o in orders %}
+            <tr class="hover:bg-[#faf8f5] transition">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <p class="font-bold">#{{ o.id }}</p>
+                <p class="text-xs text-black/40 mt-0.5">{{ o.created_at.strftime('%d/%m/%Y %H:%M') if o.created_at else '' }}</p>
+              </td>
+              <td class="px-4 py-4">
+                <p class="font-bold text-black">{{ o.name }}</p>
+                <p class="text-xs text-black/60 mt-0.5">📍 {{ o.address }}</p>
+                {% if o.notes %}
+                  <p class="text-xs italic text-black/40 mt-1">"{{ o.notes }}"</p>
+                {% endif %}
+              </td>
+              <td class="px-4 py-4">
+                <ul class="space-y-1 text-xs text-black/70">
+                  {% for item in o.items %}
+                    <li>
+                      <span class="font-semibold text-black">{{ item.product_name }}</span> 
+                      <span class="text-black/50">({{ item.color or '-' }} / {{ item.size or '-' }})</span>
+                      <span class="font-bold text-[#c61b5a]">×{{ item.quantity }}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </td>
+              <td class="px-4 py-4 whitespace-nowrap font-black text-base text-[#c61b5a]">
+                S/ {{ "%.2f"|format(o.total) }}
+              </td>
+              <td class="px-4 py-4 whitespace-nowrap">
+                {% if o.voucher_url %}
+                  <a href="{{ o.voucher_url }}" target="_blank"
+                    class="text-xs font-bold text-[#c61b5a] bg-pink-50 hover:bg-pink-100 px-3 py-1.5 rounded-full transition inline-block">
+                    Ver voucher ↗
+                  </a>
+                {% else %}
+                  <span class="text-xs text-black/30 italic">Sin comprobante</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-4 whitespace-nowrap">
+                <form method="POST" action="/admin/orders/{{ o.id }}/status" class="inline-block">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                  <select name="status" onchange="this.form.submit()"
+                    class="text-xs font-bold rounded-full px-3 py-1.5 border border-black/10 focus:outline-none cursor-pointer transition
+                    {% if o.status == 'Pendiente' %}bg-yellow-50 text-yellow-700 border-yellow-200
+                    {% elif o.status == 'Completado' %}bg-green-50 text-green-700 border-green-200
+                    {% else %}bg-red-50 text-red-700 border-red-200{% endif %}">
+                    <option value="Pendiente" {% if o.status == 'Pendiente' %}selected{% endif %}>Pendiente</option>
+                    <option value="Completado" {% if o.status == 'Completado' %}selected{% endif %}>Completado</option>
+                    <option value="Cancelado" {% if o.status == 'Cancelado' %}selected{% endif %}>Cancelado</option>
+                  </select>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="bg-white rounded-3xl p-12 text-center border border-black/5 shadow-sm">
+        <p class="text-3xl mb-3">🛍️</p>
+        <p class="font-bold text-lg">No hay pedidos registrados</p>
+        <p class="text-sm text-black/50 mt-1">Los pedidos aparecerán aquí a medida que los clientes compren.</p>
+      </div>
+      {% endif %}
+    </div>
+  </main>
+
+  <script>
+    function switchTab(tab) {
+      const secProductos = document.getElementById("section-productos");
+      const secPedidos = document.getElementById("section-pedidos");
+      const btnProductos = document.getElementById("tab-btn-productos");
+      const btnPedidos = document.getElementById("tab-btn-pedidos");
+
+      if (tab === "productos") {
+        secProductos.classList.remove("hidden");
+        secPedidos.classList.add("hidden");
+        
+        btnProductos.classList.add("border-[#c61b5a]", "text-[#111827]");
+        btnProductos.classList.remove("border-transparent", "text-black/40");
+
+        btnPedidos.classList.remove("border-[#c61b5a]", "text-[#111827]");
+        btnPedidos.classList.add("border-transparent", "text-black/40");
+      } else {
+        secProductos.classList.add("hidden");
+        secPedidos.classList.remove("hidden");
+
+        btnPedidos.classList.add("border-[#c61b5a]", "text-[#111827]");
+        btnPedidos.classList.remove("border-transparent", "text-black/40");
+
+        btnProductos.classList.remove("border-[#c61b5a]", "text-[#111827]");
+        btnProductos.classList.add("border-transparent", "text-black/40");
+      }
+    }
+
+    // Auto-desvanecer mensajes flash después de 4 segundos
+    document.querySelectorAll('.flash-message').forEach(el => {
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(-10px)';
+        el.style.maxHeight = '0';
+        el.style.paddingTop = '0';
+        el.style.paddingBottom = '0';
+        el.style.marginTop = '0';
+        el.style.marginBottom = '0';
+        el.style.borderWidth = '0';
+        setTimeout(() => el.remove(), 500);
+      }, 4000);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin — Corazón Valiente</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Montserrat', sans-serif; }</style>
+</head>
+<body class="bg-[#f4efe7] min-h-screen flex items-center justify-center px-4">
+
+  <div class="w-full max-w-sm">
+    <div class="text-center mb-8">
+      <p class="text-xs tracking-[0.35em] uppercase font-semibold text-[#c61b5a]">Panel de administración</p>
+      <h1 class="text-3xl font-black uppercase mt-1">Corazón Valiente</h1>
+    </div>
+
+    <div class="bg-white rounded-3xl p-8 shadow-sm border border-black/5">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="space-y-3 mb-6" id="flash-container">
+            {% for category, message in messages %}
+              <div class="flash-message flex items-center gap-3 px-5 py-3 rounded-2xl text-sm font-semibold border transition-all duration-500 transform opacity-100 translate-y-0
+                {% if category == 'error' %}bg-rose-50 text-rose-600 border-rose-100
+                {% elif category == 'warning' %}bg-amber-50 text-amber-700 border-amber-200
+                {% else %}bg-emerald-50 text-emerald-700 border-emerald-100{% endif %}">
+                <span class="flex items-center justify-center w-5 h-5 rounded-full bg-current/10 text-xs font-bold shrink-0">
+                  {% if category == 'error' %}✕{% elif category == 'warning' %}⚠️{% else %}✓{% endif %}
+                </span>
+                <span class="flex-1">{{ message }}</span>
+                <button onclick="this.closest('.flash-message').remove()" class="text-current/40 hover:text-current font-bold text-lg leading-none cursor-pointer">✕</button>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" action="/admin/login" class="space-y-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-widest mb-1">Email</label>
+          <input type="email" name="email" required autocomplete="email"
+            class="w-full border border-black/10 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c61b5a]"
+            placeholder="admin@ejemplo.com"/>
+        </div>
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-widest mb-1">Contraseña</label>
+          <input type="password" name="password" required autocomplete="current-password"
+            class="w-full border border-black/10 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#c61b5a]"
+            placeholder="••••••••"/>
+        </div>
+        <button type="submit"
+          class="w-full bg-[#111827] text-white py-3 rounded-full font-bold uppercase tracking-widest text-sm hover:bg-[#1f2937] transition mt-2">
+          Ingresar
+        </button>
+      </form>
+    </div>
+
+    <p class="text-center text-xs text-black/30 mt-6">
+      <a href="/" class="hover:underline">← Volver a la tienda</a>
+    </p>
+  </div>
+
+  <script>
+    // Auto-desvanecer mensajes flash después de 4 segundos
+    document.querySelectorAll('.flash-message').forEach(el => {
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(-10px)';
+        el.style.maxHeight = '0';
+        el.style.paddingTop = '0';
+        el.style.paddingBottom = '0';
+        el.style.marginTop = '0';
+        el.style.marginBottom = '0';
+        el.style.borderWidth = '0';
+        setTimeout(() => el.remove(), 500);
+      }, 4000);
+    });
+  </script>
+</body>
+</html>

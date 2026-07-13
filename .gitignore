@@ -1,0 +1,38 @@
+# Entorno
+.env
+*.env.local
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker
+.docker/
+
+# Logs
+*.log
+logs/
+
+# Uploads locales
+uploads/
+*.jpg
+*.jpeg
+*.png
+*.gif
+
+# MySQL data (volumen Docker)
+mysql_data/
+
+# Distribución
+dist/
+build/
+*.egg-info/

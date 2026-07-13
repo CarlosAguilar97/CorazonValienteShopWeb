@@ -1,0 +1,20 @@
+services:
+
+  ecommerce:
+    image: 192.168.1.20:5000/codexlabs/ecommerce:${IMAGE_TAG:-latest}
+    container_name: ecommerce-app
+    restart: always
+    env_file:
+      - .env
+    networks:
+      - web-proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ecommerce.rule=Host(`ecommerce.codexlabs.cloud`)
+      - traefik.http.routers.ecommerce.entrypoints=web
+      - traefik.http.services.ecommerce.loadbalancer.server.port=5000
+
+networks:
+  web-proxy:
+    external: true    # Red compartida de Traefik (ya existe en el servidor)
+
