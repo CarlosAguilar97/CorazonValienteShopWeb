@@ -107,12 +107,11 @@ def checkout():
         if ext not in ALLOWED_VOUCHER:
             return jsonify({"error": "Formato de voucher no permitido. Usa JPG, PNG o PDF"}), 400
 
-        voucher_folder = os.path.join(current_app.static_folder, "uploads", "vouchers")
-        os.makedirs(voucher_folder, exist_ok=True)
-
-        filename = f"{uuid.uuid4().hex}.{ext}"
-        voucher_file.save(os.path.join(voucher_folder, filename))
-        voucher_url = f"/static/uploads/vouchers/{filename}"
+        from src.infrastructure.services.storage_service import upload_file
+        try:
+            voucher_url = upload_file(voucher_file, folder="vouchers")
+        except Exception as e:
+            return jsonify({"error": f"Error al subir el voucher: {str(e)}"}), 500
 
     total = round(sum(i["price"] * i["quantity"] for i in cart), 2)
 

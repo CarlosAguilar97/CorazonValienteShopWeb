@@ -25,13 +25,9 @@ def _allowed(filename: str) -> bool:
 
 
 def _save_image(file, app) -> str:
-    """Guarda el archivo en static/uploads y retorna la URL relativa."""
-    ext = file.filename.rsplit(".", 1)[1].lower()
-    unique_name = f"{uuid.uuid4().hex}.{ext}"
-    upload_folder = os.path.join(app.static_folder, "uploads")
-    os.makedirs(upload_folder, exist_ok=True)
-    file.save(os.path.join(upload_folder, unique_name))
-    return f"/static/uploads/{unique_name}"
+    """Guarda el archivo delegando en el Storage Service (Cloudinary o Local)."""
+    from src.infrastructure.services.storage_service import upload_file
+    return upload_file(file, folder="products")
 
 
 @login_required
@@ -80,19 +76,51 @@ def product_new_post():
     colors = [c.strip() for c in data.get("colors", "").split(",") if c.strip()]
     sizes  = [s.strip() for s in data.get("sizes",  "").split(",") if s.strip()]
 
+    # Controlar conversiones numéricas seguras
+    try:
+        price = float(data.get("price", 0))
+    except ValueError:
+        price = 0.0
+
+    try:
+        original_price = float(data.get("original_price")) if data.get("original_price") else None
+    except ValueError:
+        original_price = None
+
+    try:
+        stock = int(data.get("stock", 0))
+    except ValueError:
+        stock = 0
+
     dto = CreateProductDTO(
-        name=data["name"],
+        name=data.get("name", "").strip(),
         description=data.get("description", ""),
-        price=float(data["price"]),
-        stock=int(data.get("stock", 0)),
-        original_price=float(data["original_price"]) if data.get("original_price") else None,
+        price=price,
+        stock=stock,
+        original_price=original_price,
         colors=colors,
         sizes=sizes or ["S", "M", "L", "XL"],
         images=images,
     )
-    CreateProductUseCase(_repo()).execute(dto)
-    flash("Producto creado correctamente.", "success")
-    return redirect(url_for("admin.dashboard"))
+
+    try:
+        CreateProductUseCase(_repo()).execute(dto)
+        flash("Producto creado correctamente.", "success")
+        return redirect(url_for("admin.dashboard"))
+    except ValueError as e:
+        flash(str(e), "error")
+        # Retornar el formulario conservando la información que ingresó
+        mock_product = {
+            "name": dto.name,
+            "description": dto.description,
+            "price": dto.price,
+            "original_price": dto.original_price,
+            "stock": dto.stock,
+            "colors": dto.colors,
+            "sizes": dto.sizes,
+            "images": dto.images,
+        }
+        return render_template("admin/product_form.html", product=mock_product)
 
 
 @login_required
@@ -131,12 +159,27 @@ def product_edit_post(product_id: int):
     colors = [c.strip() for c in data.get("colors", "").split(",") if c.strip()]
     sizes  = [s.strip() for s in data.get("sizes",  "").split(",") if s.strip()]
 
+    try:
+        price = float(data.get("price", 0))
+    except ValueError:
+        price = 0.0
+
+    try:
+        original_price = float(data.get("original_price")) if data.get("original_price") else None
+    except ValueError:
+        original_price = None
+
+    try:
+        stock = int(data.get("stock", 0))
+    except ValueError:
+        stock = 0
+
     update_data = {
-        "name":           data["name"],
+        "name":           data.get("name", "").strip(),
         "description":    data.get("description", ""),
-        "price":          float(data["price"]),
-        "stock":          int(data.get("stock", 0)),
-        "original_price": float(data["original_price"]) if data.get("original_price") else None,
+        "price":          price,
+        "stock":          stock,
+        "original_price": original_price,
         "colors":         colors,
         "sizes":          sizes or ["S", "M", "L", "XL"],
         "images":         images,
@@ -145,9 +188,23 @@ def product_edit_post(product_id: int):
     try:
         UpdateProductUseCase(repo).execute(product_id, update_data)
         flash("Producto actualizado.", "success")
+        return redirect(url_for("admin.dashboard"))
     except ValueError as e:
         flash(str(e), "error")
-    return redirect(url_for("admin.dashboard"))
+        # Retornar el formulario conservando la información que ingresó
+        mock_product = {
+            "id":             product_id,
+            "name":           update_data["name"],
+            "description":    update_data["description"],
+            "price":          update_data["price"],
+            "original_price": update_data["original_price"],
+            "stock":          update_data["stock"],
+            "colors":         update_data["colors"],
+            "sizes":          update_data["sizes"],
+            "images":         update_data["images"],
+            "is_active":      update_data["is_active"],
+        }
+        return render_template("admin/product_form.html", product=mock_product)
 
 
 @login_required

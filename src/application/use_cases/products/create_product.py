@@ -16,9 +16,32 @@ class CreateProductUseCase:
         self._repo = repo
 
     def execute(self, dto: CreateProductDTO) -> ProductDTO:
+        # Validar nombre
+        if not dto.name or not dto.name.strip():
+            raise ValueError("El nombre del producto no puede estar vacío.")
+
+        # Validar precios
+        if dto.price < 0:
+            raise ValueError("El precio no puede ser negativo.")
+        if dto.original_price is not None:
+            if dto.original_price < 0:
+                raise ValueError("El precio original no puede ser negativo.")
+            if dto.original_price <= dto.price:
+                raise ValueError("El precio original debe ser mayor que el precio de venta.")
+
+        # Validar stock
+        if dto.stock < 0:
+            raise ValueError("El stock no puede ser negativo.")
+
+        # Verificar unicidad del slug
+        slug = _slugify(dto.name)
+        existing = self._repo.find_by_slug(slug)
+        if existing:
+            raise ValueError(f"Ya existe un producto con el nombre '{dto.name}' o similar.")
+
         product = Product(
             id=None,
-            name=dto.name,
+            name=dto.name.strip(),
             description=dto.description,
             price=dto.price,
             original_price=dto.original_price,
@@ -26,7 +49,7 @@ class CreateProductUseCase:
             colors=dto.colors,
             sizes=dto.sizes,
             images=dto.images,
-            slug=_slugify(dto.name),
+            slug=slug,
         )
         saved = self._repo.save(product)
         return ProductDTO(

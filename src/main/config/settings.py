@@ -16,9 +16,16 @@ class Settings:
     MYSQL_USER: str = os.getenv("MYSQL_USER", "root")
     MYSQL_PASSWORD: str = os.getenv("MYSQL_PASSWORD", "")
     MYSQL_DB: str = os.getenv("MYSQL_DB", "corazon_valiente")
+    MYSQL_SSL_CA: str = os.getenv("MYSQL_SSL_CA", "")
 
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
+        direct_url = os.getenv("DATABASE_URL")
+        if direct_url:
+            if direct_url.startswith("mysql://"):
+                direct_url = direct_url.replace("mysql://", "mysql+pymysql://", 1)
+            return direct_url
+
         import urllib.parse
         encoded_password = urllib.parse.quote_plus(self.MYSQL_PASSWORD)
         return (

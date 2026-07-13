@@ -35,6 +35,21 @@ def create_app() -> Flask:
     app.config["SQLALCHEMY_DATABASE_URI"]        = settings.SQLALCHEMY_DATABASE_URI
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+    # SSL para base de datos en la nube
+    ssl_ca = settings.MYSQL_SSL_CA
+    if ssl_ca:
+        # Resolver ruta del certificado si es relativa
+        if not os.path.isabs(ssl_ca):
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
+            ssl_ca = os.path.join(project_root, ssl_ca)
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+            "connect_args": {
+                "ssl": {
+                    "ca": ssl_ca
+                }
+            }
+        }
+
     # ── Extensiones ───────────────────────────────────────────
     CORS(app)
     init_db(app)
