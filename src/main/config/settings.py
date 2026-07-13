@@ -24,7 +24,16 @@ class Settings:
         if direct_url:
             if direct_url.startswith("mysql://"):
                 direct_url = direct_url.replace("mysql://", "mysql+pymysql://", 1)
-            return direct_url
+            
+            # Limpiar parámetros incompatibles (como ssl-mode) de la URL
+            import urllib.parse
+            parsed = urllib.parse.urlparse(direct_url)
+            query_params = urllib.parse.parse_qs(parsed.query)
+            query_params.pop("ssl-mode", None)
+            query_params.pop("ssl_mode", None)
+            new_query = urllib.parse.urlencode(query_params, doseq=True)
+            parsed = parsed._replace(query=new_query)
+            return urllib.parse.urlunparse(parsed)
 
         import urllib.parse
         encoded_password = urllib.parse.quote_plus(self.MYSQL_PASSWORD)
