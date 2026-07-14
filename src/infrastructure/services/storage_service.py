@@ -15,6 +15,13 @@ def upload_file(file, folder: str = "ecommerce") -> str:
         result = cloudinary.uploader.upload(file, folder=folder)
         return result.get("secure_url")
     
+    # Si estamos en producción (Vercel) y no se ha configurado Cloudinary, lanzamos un error explicativo
+    if os.getenv("VERCEL") == "1" or settings.FLASK_ENV == "production":
+        raise ValueError(
+            "No se ha configurado la variable de entorno 'CLOUDINARY_URL' en Vercel. "
+            "El almacenamiento de archivos local no es posible en un sistema serverless de solo lectura."
+        )
+
     # Caída a guardado local
     from flask import current_app
     ext = file.filename.rsplit(".", 1)[-1].lower()
