@@ -89,10 +89,70 @@ def create_app() -> Flask:
     def index():
         return render_template("index.html")
 
-    # ── Crear tablas ──────────────────────────────────────────
-    with app.app_context():
-        db.create_all()
-        logger.info("Base de datos lista ✓")
+    # ── Ruta de Diagnóstico ────────────────────────────────────
+    @app.route("/test-db")
+    def test_db():
+        import socket
+        import os
+        from src.main.config.settings import settings
+        
+        diagnostics = {}
+        
+        # 1. Verificar ca.pem
+        ssl_ca = settings.MYSQL_SSL_CA
+        if ssl_ca:
+            if not os.path.isabs(ssl_ca):
+                project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+                ssl_ca = os.path.join(project_root, ssl_ca)
+            diagnostics["ca_path"] = ssl_ca
+            diagnostics["ca_exists"] = os.path.exists(ssl_ca)
+            if os.path.exists(ssl_ca):
+                diagnostics["ca_size"] = os.path.getsize(ssl_ca)
+        else:
+            diagnostics["ca_configured"] = False
+
+        # 2. Obtener host y puerto de la base de datos
+        from urllib.parse import urlparse
+        db_url = settings.SQLALCHEMY_DATABASE_URI
+        diagnostics["db_url_configured"] = bool(db_url)
+        
+        host = "mysql-11f41244-database-dev.f.aivencloud.com"
+        port = 24132
+        
+        if db_url:
+            try:
+                parsed = urlparse(db_url)
+                host = parsed.hostname or host
+                port = parsed.port or port
+                diagnostics["host"] = host
+                diagnostics["port"] = port
+            except Exception as e:
+                diagnostics["url_parse_error"] = str(e)
+
+        # 3. Resolución DNS
+        try:
+            ips = socket.getaddrinfo(host, port)
+            diagnostics["dns_resolution"] = list(set([ip[4][0] for ip in ips]))
+        except Exception as e:
+            diagnostics["dns_resolution_error"] = str(e)
+
+        # 4. Conexión TCP socket cruda
+        try:
+            s = socket.create_connection((host, port), timeout=5)
+            s.close()
+            diagnostics["socket_connection"] = "Success"
+        except Exception as e:
+            diagnostics["socket_connection_error"] = str(e)
+
+        # 5. Consulta de prueba SQLAlchemy
+        try:
+            from sqlalchemy import text
+            res = db.session.execute(text("SELECT 1")).scalar()
+            diagnostics["db_query"] = f"Success (result={res})"
+        except Exception as e:
+            diagnostics["db_query_error"] = str(e)
+
+        return jsonify(diagnostics)
 
     # ── Comando CLI: crear usuario admin ──────────────────────
     @app.cli.command("create-admin")
