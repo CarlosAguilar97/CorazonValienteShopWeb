@@ -131,6 +131,28 @@ def create_app() -> Flask:
                 diagnostics["url_parse_error"] = str(e)
 
         # 3. Resolución DNS
+        # 3a. Prueba con google.com
+        try:
+            google_ips = socket.getaddrinfo("google.com", 80)
+            diagnostics["dns_google_resolution"] = list(set([ip[4][0] for ip in google_ips]))
+        except Exception as e:
+            diagnostics["dns_google_error"] = str(e)
+
+        # 3b. Prueba gethostbyname con el host de Aiven
+        try:
+            aiven_ip = socket.gethostbyname(host)
+            diagnostics["dns_host_by_name"] = aiven_ip
+        except Exception as e:
+            diagnostics["dns_host_by_name_error"] = str(e)
+
+        # 3c. Prueba getaddrinfo con Aiven y puerto None
+        try:
+            aiven_ips_none = socket.getaddrinfo(host, None)
+            diagnostics["dns_resolution_none_port"] = list(set([ip[4][0] for ip in aiven_ips_none]))
+        except Exception as e:
+            diagnostics["dns_resolution_none_port_error"] = str(e)
+
+        # 3d. Prueba original getaddrinfo con Aiven y puerto
         try:
             ips = socket.getaddrinfo(host, port)
             diagnostics["dns_resolution"] = list(set([ip[4][0] for ip in ips]))
