@@ -92,6 +92,7 @@ def create_app() -> Flask:
     # ── Ruta de Diagnóstico ────────────────────────────────────
     @app.route("/test-db")
     def test_db():
+        from flask import jsonify
         import socket
         import os
         from src.main.config.settings import settings
